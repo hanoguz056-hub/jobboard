@@ -1,0 +1,746 @@
+definitions:
+  handler.BanUserRequest:
+    properties:
+      is_banned:
+        type: boolean
+    type: object
+  models.Application:
+    properties:
+      candidate_id:
+        type: string
+      cover_letter:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: string
+      job_id:
+        type: string
+      resume_url:
+        type: string
+      status:
+        $ref: '#/definitions/models.ApplicationStatus'
+    type: object
+  models.ApplicationStatus:
+    enum:
+    - pending
+    - reviewed
+    - interview
+    - rejected
+    - accepted
+    type: string
+    x-enum-varnames:
+    - ApplicationPending
+    - ApplicationReviewed
+    - ApplicationInterview
+    - ApplicationRejected
+    - ApplicationAccepted
+  models.AuthResponse:
+    properties:
+      access_token:
+        type: string
+      user:
+        $ref: '#/definitions/models.User'
+    type: object
+  models.Company:
+    properties:
+      city:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      owner_id:
+        type: string
+      website:
+        type: string
+    type: object
+  models.Job:
+    properties:
+      city:
+        type: string
+      company_id:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      salary_max:
+        type: number
+      salary_min:
+        type: number
+      status:
+        $ref: '#/definitions/models.JobStatus'
+      title:
+        type: string
+      type:
+        $ref: '#/definitions/models.JobType'
+    type: object
+  models.JobStatus:
+    enum:
+    - draft
+    - open
+    - closed
+    type: string
+    x-enum-varnames:
+    - JobDraft
+    - JobOpen
+    - JobClosed
+  models.JobType:
+    enum:
+    - full
+    - part
+    - remote
+    type: string
+    x-enum-varnames:
+    - JobFull
+    - JobPart
+    - JobRemote
+  models.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  models.Role:
+    enum:
+    - employer
+    - candidate
+    - admin
+    type: string
+    x-enum-varnames:
+    - RoleEmployer
+    - RoleCandidate
+    - RoleAdmin
+  models.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: string
+      is_banned:
+        type: boolean
+      role:
+        $ref: '#/definitions/models.Role'
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Это сервер API для биржи труда.
+  title: Job Board API
+  version: "1.0"
+paths:
+  /api/v1/admin/jobs/{id}/approve:
+    patch:
+      parameters:
+      - description: ID вакансии
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Одобрить вакансию (Admin)
+      tags:
+      - admin
+  /api/v1/admin/users:
+    get:
+      parameters:
+      - description: Страница
+        in: query
+        name: page
+        type: integer
+      - description: Лимит
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.User'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Список всех пользователей
+      tags:
+      - admin
+  /api/v1/admin/users/{id}/ban:
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID пользователя
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Данные
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/handler.BanUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Заблокировать пользователя
+      tags:
+      - admin
+  /api/v1/applications/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID отклика
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Статус
+        in: body
+        name: input
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Изменить статус отклика
+      tags:
+      - applications
+  /api/v1/applications/my:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Application'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Мои отклики
+      tags:
+      - applications
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные пользователя
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AuthResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Вход в систему
+      tags:
+      - auth
+  /api/v1/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Создает новый аккаунт пользователя с указанной ролью (candidate,
+        employer)
+      parameters:
+      - description: Данные для регистрации
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Пользователь успешно создан
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Неверный формат запроса или валидации
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Пользователь с таким email уже существует
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Регистрация нового пользователя
+      tags:
+      - auth
+  /api/v1/companies:
+    get:
+      parameters:
+      - description: Страница
+        in: query
+        name: page
+        type: integer
+      - description: Лимит
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Company'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Список компаний
+      tags:
+      - companies
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные компании
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.Company'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Company'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Создать компанию
+      tags:
+      - companies
+  /api/v1/companies/{id}:
+    get:
+      parameters:
+      - description: ID компании
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Company'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Компания по ID
+      tags:
+      - companies
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID компании
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Данные компании
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.Company'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Company'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Обновить компанию
+      tags:
+      - companies
+  /api/v1/jobs:
+    get:
+      parameters:
+      - description: Страница
+        in: query
+        name: page
+        type: integer
+      - description: Лимит
+        in: query
+        name: limit
+        type: integer
+      - description: Поиск по названию
+        in: query
+        name: search
+        type: string
+      - description: Город
+        in: query
+        name: city
+        type: string
+      - description: 'Тип: full/part/remote'
+        in: query
+        name: type
+        type: string
+      - description: Мин зарплата
+        in: query
+        name: salary_min
+        type: number
+      - description: Макс зарплата
+        in: query
+        name: salary_max
+        type: number
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Job'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Список вакансий
+      tags:
+      - jobs
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные вакансии
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.Job'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Job'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Создать вакансию
+      tags:
+      - jobs
+  /api/v1/jobs/{id}:
+    delete:
+      parameters:
+      - description: ID вакансии
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Удалить вакансию
+      tags:
+      - jobs
+    get:
+      parameters:
+      - description: ID вакансии
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Job'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Вакансия по ID
+      tags:
+      - jobs
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID вакансии
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Данные вакансии
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/models.Job'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Обновить вакансию
+      tags:
+      - jobs
+  /api/v1/jobs/{id}/applications:
+    get:
+      parameters:
+      - description: ID вакансии
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Application'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Отклики на вакансию
+      tags:
+      - applications
+  /api/v1/jobs/{id}/apply:
+    post:
+      consumes:
+      - multipart/form-data
+      parameters:
+      - description: ID вакансии
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: PDF резюме
+        in: formData
+        name: resume
+        required: true
+        type: file
+      - description: Сопроводительное письмо
+        in: formData
+        name: cover_letter
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Application'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Откликнуться на вакансию
+      tags:
+      - applications
+  /api/v1/jobs/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID вакансии
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Статус
+        in: body
+        name: input
+        required: true
+        schema:
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Изменить статус вакансии
+      tags:
+      - jobs
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

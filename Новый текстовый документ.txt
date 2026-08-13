@@ -1,0 +1,11 @@
+{
+    "email": "employer@test.com",
+    "password": "123456",
+    "role": "employer"
+}
+
+
+{
+    "email": "employer@test.com",
+    "password": "123456"
+}
